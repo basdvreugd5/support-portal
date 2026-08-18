@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TicketMessageType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTicketMessageRequest extends FormRequest
 {
@@ -11,18 +13,23 @@ class StoreTicketMessageRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('reply', $this->route('ticket'));
+        $type = $this->enum('type', TicketMessageType::class) ?? TicketMessageType::Public;
+
+        return $type === TicketMessageType::Internal
+            ? $this->user()->can('addInternalNote', $this->route('ticket'))
+            : $this->user()->can('reply', $this->route('ticket'));
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
             'body' => ['required', 'string', 'max:10000'],
+            'type' => ['nullable', Rule::enum(TicketMessageType::class)],
         ];
     }
 }

@@ -76,3 +76,52 @@ it('includes tickets at the exact start of the due soon window', function () {
 
     expect($ids)->toBe([$atWindowEdge->id]);
 });
+
+it('scopes on track to active tickets beyond the due soon window', function () {
+    $this->travelTo('2026-01-01 09:00:00');
+
+    $onTrack = Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->addHours(3),
+    ]);
+    Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->addHours(2),
+    ]);
+    Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->addHour(),
+    ]);
+    Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->subHour(),
+    ]);
+    Ticket::factory()->create([
+        'status' => TicketStatus::Resolved,
+        'sla_due_at' => now()->addHours(3),
+    ]);
+    Ticket::factory()->create([
+        'status' => TicketStatus::Closed,
+        'sla_due_at' => now()->addHours(3),
+    ]);
+
+    $ids = Ticket::onTrack()->pluck('id')->all();
+
+    expect($ids)->toBe([$onTrack->id]);
+});
+
+it('splits active tickets across the exact on track and due soon boundary', function () {
+    $this->travelTo('2026-01-01 09:00:00');
+
+    $beyondWindow = Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->addMinutes(121),
+    ]);
+    $atWindowEdge = Ticket::factory()->create([
+        'status' => TicketStatus::Open,
+        'sla_due_at' => now()->addMinutes(120),
+    ]);
+
+    expect(Ticket::onTrack()->pluck('id')->all())->toBe([$beyondWindow->id]);
+    expect(Ticket::dueSoon()->pluck('id')->all())->toBe([$atWindowEdge->id]);
+});

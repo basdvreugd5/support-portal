@@ -13,6 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { index, store } from '@/routes/tickets';
+import type { Organization } from '@/types';
+
+defineProps<{
+    organizations?: Organization[];
+}>();
 </script>
 
 <template>
@@ -82,6 +87,31 @@ import { index, store } from '@/routes/tickets';
                             <option value="high">Hoog</option>
                         </select>
                         <InputError :message="errors.priority" />
+                    </div>
+
+                    <div
+                        v-if="organizations && organizations.length > 0"
+                        class="grid gap-2"
+                    >
+                        <Label for="organization_id">Organisatie</Label>
+                        <select
+                            id="organization_id"
+                            name="organization_id"
+                            required
+                            class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
+                        >
+                            <option value="" disabled selected>
+                                Kies een organisatie
+                            </option>
+                            <option
+                                v-for="organization in organizations"
+                                :key="organization.id"
+                                :value="organization.id"
+                            >
+                                {{ organization.name }}
+                            </option>
+                        </select>
+                        <InputError :message="errors.organization_id" />
                     </div>
 
                     <Button

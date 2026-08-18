@@ -142,6 +142,20 @@ class Ticket extends Model
     }
 
     /**
+     * Restrict a query to active tickets comfortably before their SLA
+     * deadline.
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function onTrack(Builder $query): void
+    {
+        $query
+            ->whereNotIn('status', $this->inactiveStatuses())
+            ->where('sla_due_at', '>', now()->addMinutes(self::DUE_SOON_WINDOW_MINUTES));
+    }
+
+    /**
      * Determine the SLA status derived from the deadline and lifecycle.
      */
     public function slaStatus(): ?SlaStatus
