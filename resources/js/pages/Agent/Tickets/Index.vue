@@ -36,10 +36,14 @@ function resetFilters(): void {
     filters.priority = '';
     filters.sla = '';
 
-    router.get(index().url, {}, {
-        preserveState: true,
-        preserveScroll: true,
-    });
+    router.get(
+        index().url,
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+        },
+    );
 }
 
 function formatDate(value: string | null): string {
@@ -192,9 +196,7 @@ const selectClass =
             <Button
                 variant="ghost"
                 class="h-9"
-                :disabled="
-                    !filters.status && !filters.priority && !filters.sla
-                "
+                :disabled="!filters.status && !filters.priority && !filters.sla"
                 @click="resetFilters"
             >
                 Filters wissen

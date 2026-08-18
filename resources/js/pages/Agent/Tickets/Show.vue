@@ -240,9 +240,7 @@ const selectClass =
                                 v-for="agent in agents"
                                 :key="agent.id"
                                 :value="agent.id"
-                                :selected="
-                                    ticket.assigned_to?.id === agent.id
-                                "
+                                :selected="ticket.assigned_to?.id === agent.id"
                             >
                                 {{ agent.name }}
                             </option>
@@ -250,11 +248,7 @@ const selectClass =
                         <InputError :message="errors.assigned_to_id" />
                     </div>
 
-                    <Button
-                        type="submit"
-                        class="w-fit"
-                        :disabled="processing"
-                    >
+                    <Button type="submit" class="w-fit" :disabled="processing">
                         <Spinner v-if="processing" />
                         Opslaan
                     </Button>
@@ -281,8 +275,7 @@ const selectClass =
                         >
                             <div class="flex items-center gap-2">
                                 <span class="font-medium">{{
-                                    message.user?.name ??
-                                    'Onbekende gebruiker'
+                                    message.user?.name ?? 'Onbekende gebruiker'
                                 }}</span>
                                 <Badge
                                     v-if="message.type.value === 'internal'"
@@ -339,11 +332,7 @@ const selectClass =
                         class="w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
                     />
                     <InputError :message="errors.body" />
-                    <Button
-                        type="submit"
-                        class="w-fit"
-                        :disabled="processing"
-                    >
+                    <Button type="submit" class="w-fit" :disabled="processing">
                         <Spinner v-if="processing" />
                         Verstuur
                     </Button>
