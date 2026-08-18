@@ -45,9 +45,32 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
-                'toast' => $request->session()->get('toast'),
+                'toast' => $request->session()->get('toast')
+                    ?? $this->synthesizeToast($request),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Derive a toast from the flashed success or error message so the frontend
+     * flash listener can display feedback for regular mutations.
+     *
+     * @return array{type: 'success'|'error', message: string}|null
+     */
+    private function synthesizeToast(Request $request): ?array
+    {
+        $success = $request->session()->get('success');
+        $error = $request->session()->get('error');
+
+        if ($success !== null) {
+            return ['type' => 'success', 'message' => $success];
+        }
+
+        if ($error !== null) {
+            return ['type' => 'error', 'message' => $error];
+        }
+
+        return null;
     }
 }

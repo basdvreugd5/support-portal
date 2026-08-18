@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { create } from '@/routes/tickets';
+import { create, show } from '@/routes/tickets';
 import type { Ticket } from '@/types';
 
 defineProps<{
@@ -18,6 +18,20 @@ function formatDate(value: string | null): string {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
+    });
+}
+
+function formatDeadline(value: string | null): string {
+    if (!value) {
+        return '-';
+    }
+
+    return new Date(value).toLocaleDateString('nl-NL', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
@@ -95,6 +109,7 @@ function slaVariant(
                         <th class="px-4 py-3 font-medium">Status</th>
                         <th class="px-4 py-3 font-medium">Prioriteit</th>
                         <th class="px-4 py-3 font-medium">SLA</th>
+                        <th class="px-4 py-3 font-medium">Deadline</th>
                         <th class="px-4 py-3 font-medium">Aangemaakt</th>
                     </tr>
                 </thead>
@@ -106,7 +121,7 @@ function slaVariant(
                     >
                         <td class="px-4 py-3">
                             <Link
-                                :href="`/tickets/${ticket.id}`"
+                                :href="show(ticket.id).url"
                                 class="font-medium underline-offset-4 hover:underline"
                             >
                                 {{ ticket.title }}
@@ -138,13 +153,16 @@ function slaVariant(
                             <span v-else class="text-muted-foreground">-</span>
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">
+                            {{ formatDeadline(ticket.sla_due_at) }}
+                        </td>
+                        <td class="px-4 py-3 text-muted-foreground">
                             {{ formatDate(ticket.created_at) }}
                         </td>
                     </tr>
                     <tr v-if="tickets.length === 0">
                         <td
                             class="px-4 py-8 text-center text-muted-foreground"
-                            colspan="5"
+                            colspan="6"
                         >
                             Nog geen tickets. Maak het eerste ticket aan.
                         </td>

@@ -80,6 +80,25 @@ it('allows a client to create a ticket with open status and an SLA deadline', fu
     expect($ticket->sla_due_at->isBefore(now()->addHours(25)))->toBeTrue();
 });
 
+it('shows a success toast after creating a ticket', function () {
+    $this->actingAs($this->clientA)
+        ->post(route('tickets.store'), [
+            'title' => 'Feedback zichtbaar',
+            'description' => 'Moet een toast tonen.',
+            'priority' => 'normal',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    $ticket = Ticket::where('title', 'Feedback zichtbaar')->firstOrFail();
+
+    $this->get(route('tickets.show', $ticket))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('flash.toast.type', 'success')
+            ->where('flash.toast.message', 'Ticket aangemaakt.'));
+});
+
 it('validates the ticket creation input', function () {
     $this->actingAs($this->clientA)
         ->post(route('tickets.store'), [])

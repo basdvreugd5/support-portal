@@ -81,6 +81,7 @@ import { index, store } from '@/routes/tickets';
                             <option value="normal" selected>Normaal</option>
                             <option value="high">Hoog</option>
                         </select>
+                        <InputError :message="errors.priority" />
                     </div>
 
                     <Button

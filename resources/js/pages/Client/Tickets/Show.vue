@@ -99,6 +99,9 @@ function slaVariant(
                     SLA: {{ ticket.sla_status.label }}
                 </Badge>
             </div>
+            <p v-if="ticket.sla_due_at" class="text-sm text-muted-foreground">
+                Deadline: {{ formatDate(ticket.sla_due_at) }}
+            </p>
         </div>
 
         <Card>
@@ -150,6 +153,7 @@ function slaVariant(
                 <Form
                     v-bind="reply.form(ticket.id)"
                     :reset-on-success="['body']"
+                    :preserve-scroll="true"
                     v-slot="{ errors, processing }"
                     class="grid gap-2 border-t border-sidebar-border/70 pt-4"
                 >

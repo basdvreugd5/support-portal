@@ -43,6 +43,28 @@ it('shares flash success from the session', function () {
         ->assertInertia(fn (Assert $page) => $page->where('flash.success', 'Ticket aangemaakt.'));
 });
 
+it('synthesizes a success toast from a flashed success message', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->withSession(['success' => 'Ticket aangemaakt.'])
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('flash.toast', ['type' => 'success', 'message' => 'Ticket aangemaakt.']));
+});
+
+it('synthesizes an error toast from a flashed error message', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->withSession(['error' => 'Er is iets misgegaan.'])
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('flash.toast', ['type' => 'error', 'message' => 'Er is iets misgegaan.']));
+});
+
 it('shares a null authenticated user for guests', function () {
     $this->get(route('home'))
         ->assertOk()
