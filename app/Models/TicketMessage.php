@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Enums\TicketMessageType;
+use App\Enums\UserRole;
 use Database\Factories\TicketMessageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,5 +50,16 @@ class TicketMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Restrict a query to the messages a user is allowed to see.
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        if ($user->role !== UserRole::Agent) {
+            $query->where('type', TicketMessageType::Public);
+        }
     }
 }

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\SlaStatus;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
+use App\Enums\UserRole;
 use Database\Factories\TicketFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -77,5 +81,36 @@ class Ticket extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);
+    }
+
+    /**
+     * Restrict a query to the tickets a user is allowed to see.
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        if ($user->role !== UserRole::Agent) {
+            $query->where('organization_id', $user->organization_id);
+        }
+    }
+
+    /**
+     * Determine the SLA status derived from the deadline and lifecycle.
+     */
+    public function slaStatus(): ?SlaStatus
+    {
+        if ($this->status === TicketStatus::Resolved || $this->status === TicketStatus::Closed) {
+            return null;
+        }
+
+        if (now()->greaterThanOrEqualTo($this->sla_due_at)) {
+            return SlaStatus::Overdue;
+        }
+
+        if (abs($this->sla_due_at->diffInMinutes(now())) <= 120) {
+            return SlaStatus::DueSoon;
+        }
+
+        return SlaStatus::OnTrack;
     }
 }
