@@ -21,8 +21,13 @@ function formatDate(value: string | null): string {
     });
 }
 
-function statusVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function statusVariant(
+    value: string,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         open: 'secondary',
         in_progress: 'default',
         resolved: 'outline',
@@ -32,8 +37,13 @@ function statusVariant(value: string): 'default' | 'secondary' | 'destructive' |
     return variants[value] ?? 'secondary';
 }
 
-function priorityVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function priorityVariant(
+    value: string,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         high: 'destructive',
         normal: 'default',
         low: 'secondary',
@@ -42,8 +52,13 @@ function priorityVariant(value: string): 'default' | 'secondary' | 'destructive'
     return variants[value] ?? 'default';
 }
 
-function slaVariant(value: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function slaVariant(
+    value: string | null,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         overdue: 'destructive',
         due_soon: 'default',
         on_track: 'secondary',
@@ -59,8 +74,10 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
     <div class="flex flex-col gap-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-semibold tracking-tight">Mijn tickets</h1>
-                <p class="text-muted-foreground text-sm mt-1">
+                <h1 class="text-2xl font-semibold tracking-tight">
+                    Mijn tickets
+                </h1>
+                <p class="mt-1 text-sm text-muted-foreground">
                     Alle tickets van uw organisatie.
                 </p>
             </div>
@@ -96,27 +113,39 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
                             </Link>
                         </td>
                         <td class="px-4 py-3">
-                            <Badge :variant="statusVariant(ticket.status.value)">
+                            <Badge
+                                :variant="statusVariant(ticket.status.value)"
+                            >
                                 {{ ticket.status.label }}
                             </Badge>
                         </td>
                         <td class="px-4 py-3">
-                            <Badge :variant="priorityVariant(ticket.priority.value)">
+                            <Badge
+                                :variant="
+                                    priorityVariant(ticket.priority.value)
+                                "
+                            >
                                 {{ ticket.priority.label }}
                             </Badge>
                         </td>
                         <td class="px-4 py-3">
-                            <Badge v-if="ticket.sla_status" :variant="slaVariant(ticket.sla_status.value)">
+                            <Badge
+                                v-if="ticket.sla_status"
+                                :variant="slaVariant(ticket.sla_status.value)"
+                            >
                                 {{ ticket.sla_status.label }}
                             </Badge>
                             <span v-else class="text-muted-foreground">-</span>
                         </td>
-                        <td class="text-muted-foreground px-4 py-3">
+                        <td class="px-4 py-3 text-muted-foreground">
                             {{ formatDate(ticket.created_at) }}
                         </td>
                     </tr>
                     <tr v-if="tickets.length === 0">
-                        <td class="text-muted-foreground px-4 py-8 text-center" colspan="5">
+                        <td
+                            class="px-4 py-8 text-center text-muted-foreground"
+                            colspan="5"
+                        >
                             Nog geen tickets. Maak het eerste ticket aan.
                         </td>
                     </tr>

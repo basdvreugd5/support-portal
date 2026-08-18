@@ -26,8 +26,13 @@ function formatDate(value: string | null): string {
     });
 }
 
-function statusVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function statusVariant(
+    value: string,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         open: 'secondary',
         in_progress: 'default',
         resolved: 'outline',
@@ -37,8 +42,13 @@ function statusVariant(value: string): 'default' | 'secondary' | 'destructive' |
     return variants[value] ?? 'secondary';
 }
 
-function priorityVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function priorityVariant(
+    value: string,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         high: 'destructive',
         normal: 'default',
         low: 'secondary',
@@ -47,8 +57,13 @@ function priorityVariant(value: string): 'default' | 'secondary' | 'destructive'
     return variants[value] ?? 'default';
 }
 
-function slaVariant(value: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+function slaVariant(
+    value: string | null,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    const variants: Record<
+        string,
+        'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
         overdue: 'destructive',
         due_soon: 'default',
         on_track: 'secondary',
@@ -67,7 +82,9 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
         </Button>
 
         <div class="grid gap-3">
-            <h1 class="text-2xl font-semibold tracking-tight">{{ ticket.title }}</h1>
+            <h1 class="text-2xl font-semibold tracking-tight">
+                {{ ticket.title }}
+            </h1>
             <div class="flex flex-wrap items-center gap-2">
                 <Badge :variant="statusVariant(ticket.status.value)">
                     {{ ticket.status.label }}
@@ -75,7 +92,10 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
                 <Badge :variant="priorityVariant(ticket.priority.value)">
                     {{ ticket.priority.label }}
                 </Badge>
-                <Badge v-if="ticket.sla_status" :variant="slaVariant(ticket.sla_status.value)">
+                <Badge
+                    v-if="ticket.sla_status"
+                    :variant="slaVariant(ticket.sla_status.value)"
+                >
                     SLA: {{ ticket.sla_status.label }}
                 </Badge>
             </div>
@@ -85,7 +105,9 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
             <CardHeader>
                 <CardTitle>Omschrijving</CardTitle>
             </CardHeader>
-            <CardContent class="text-muted-foreground whitespace-pre-wrap text-sm">
+            <CardContent
+                class="text-sm whitespace-pre-wrap text-muted-foreground"
+            >
                 {{ ticket.description }}
             </CardContent>
         </Card>
@@ -95,37 +117,60 @@ function slaVariant(value: string | null): 'default' | 'secondary' | 'destructiv
                 <CardTitle class="text-base">Conversatie</CardTitle>
             </CardHeader>
             <CardContent class="grid gap-4">
-                <div v-if="ticket.messages && ticket.messages.length > 0" class="grid gap-3">
+                <div
+                    v-if="ticket.messages && ticket.messages.length > 0"
+                    class="grid gap-3"
+                >
                     <div
                         v-for="message in ticket.messages"
                         :key="message.id"
                         class="grid gap-1 rounded-lg border border-sidebar-border/70 px-4 py-3"
                     >
-                        <div class="flex items-center justify-between gap-2 text-sm">
-                            <span class="font-medium">{{ message.user?.name ?? 'Onbekende gebruiker' }}</span>
-                            <span class="text-muted-foreground text-xs">
+                        <div
+                            class="flex items-center justify-between gap-2 text-sm"
+                        >
+                            <span class="font-medium">{{
+                                message.user?.name ?? 'Onbekende gebruiker'
+                            }}</span>
+                            <span class="text-xs text-muted-foreground">
                                 {{ formatDate(message.created_at) }}
                             </span>
                         </div>
-                        <p class="text-muted-foreground whitespace-pre-wrap text-sm">
+                        <p
+                            class="text-sm whitespace-pre-wrap text-muted-foreground"
+                        >
                             {{ message.body }}
                         </p>
                     </div>
                 </div>
-                <p v-else class="text-muted-foreground text-sm">Nog geen berichten.</p>
+                <p v-else class="text-sm text-muted-foreground">
+                    Nog geen berichten.
+                </p>
 
-                <Form v-bind="reply.form(ticket.id)" :reset-on-success="['body']" v-slot="{ errors, processing }" class="grid gap-2 border-t border-sidebar-border/70 pt-4">
-                    <label class="text-sm font-medium" for="body">Reactie</label>
+                <Form
+                    v-bind="reply.form(ticket.id)"
+                    :reset-on-success="['body']"
+                    v-slot="{ errors, processing }"
+                    class="grid gap-2 border-t border-sidebar-border/70 pt-4"
+                >
+                    <label class="text-sm font-medium" for="body"
+                        >Reactie</label
+                    >
                     <textarea
                         id="body"
                         name="body"
                         rows="4"
                         required
                         placeholder="Typ uw reactie..."
-                        class="dark:bg-input/30 placeholder:text-muted-foreground border-input min-w-0 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        class="w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30"
                     />
                     <InputError :message="errors.body" />
-                    <Button type="submit" class="w-fit" :disabled="processing" data-test="reply-button">
+                    <Button
+                        type="submit"
+                        class="w-fit"
+                        :disabled="processing"
+                        data-test="reply-button"
+                    >
                         <Spinner v-if="processing" />
                         Verstuur reactie
                     </Button>
