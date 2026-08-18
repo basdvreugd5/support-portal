@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
+ * @property UserRole $role
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Organization|null $organization
@@ -49,21 +50,33 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /**
+     * @return HasMany<Ticket, $this>
+     */
     public function createdTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'created_by_id');
     }
 
+    /**
+     * @return HasMany<Ticket, $this>
+     */
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(Ticket::class, 'assigned_to_id');
     }
 
+    /**
+     * @return HasMany<TicketMessage, $this>
+     */
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);

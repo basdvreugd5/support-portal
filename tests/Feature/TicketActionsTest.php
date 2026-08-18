@@ -16,11 +16,12 @@ it('creates a ticket for a client inside their own organization', function () {
     $organization = Organization::factory()->create();
     $client = User::factory()->forOrganization($organization)->create();
 
-    $ticket = (new CreateTicketAction)->handle($client, [
-        'title' => 'Nieuwe VM aanvragen',
-        'description' => 'Wij hebben een extra VM nodig.',
-        'priority' => TicketPriority::Normal,
-    ]);
+    $ticket = (new CreateTicketAction)->handle(
+        $client,
+        'Nieuwe VM aanvragen',
+        'Wij hebben een extra VM nodig.',
+        TicketPriority::Normal,
+    );
 
     expect($ticket->organization_id)->toBe($organization->id);
     expect($ticket->created_by_id)->toBe($client->id);
@@ -34,12 +35,13 @@ it('creates a ticket for an agent on behalf of a chosen organization', function 
     $organization = Organization::factory()->create();
     $agent = User::factory()->agent()->create();
 
-    $ticket = (new CreateTicketAction)->handle($agent, [
-        'organization_id' => $organization->id,
-        'title' => 'Ticket namens klant',
-        'description' => 'Ingediend door de supportagent.',
-        'priority' => TicketPriority::Low,
-    ]);
+    $ticket = (new CreateTicketAction)->handle(
+        $agent,
+        'Ticket namens klant',
+        'Ingediend door de supportagent.',
+        TicketPriority::Low,
+        $organization->id,
+    );
 
     expect($ticket->organization_id)->toBe($organization->id);
     expect($ticket->created_by_id)->toBe($agent->id);

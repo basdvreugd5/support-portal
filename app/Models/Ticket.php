@@ -63,21 +63,33 @@ class Ticket extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_id');
     }
 
+    /**
+     * @return HasMany<TicketMessage, $this>
+     */
     public function messages(): HasMany
     {
         return $this->hasMany(TicketMessage::class);
@@ -85,6 +97,8 @@ class Ticket extends Model
 
     /**
      * Restrict a query to the tickets a user is allowed to see.
+     *
+     * @param  Builder<Ticket>  $query
      */
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void

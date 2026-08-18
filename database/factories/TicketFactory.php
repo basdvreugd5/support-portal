@@ -27,7 +27,7 @@ class TicketFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'created_by_id' => function (array $attributes): int {
-                $organization = Organization::findOrFail($attributes['organization_id']);
+                $organization = Organization::findOrFail((int) $attributes['organization_id']);
 
                 return User::factory()->forOrganization($organization)->create()->id;
             },

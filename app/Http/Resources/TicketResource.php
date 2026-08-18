@@ -2,9 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Ticket
+ */
 class TicketResource extends JsonResource
 {
     public static $wrap = null;
@@ -30,7 +34,7 @@ class TicketResource extends JsonResource
                 'value' => $this->priority->value,
                 'label' => $this->priority->label(),
             ],
-            'sla_due_at' => $this->sla_due_at?->toIso8601String(),
+            'sla_due_at' => $this->sla_due_at->toIso8601String(),
             'sla_status' => $slaStatus !== null
                 ? ['value' => $slaStatus->value, 'label' => $slaStatus->label()]
                 : null,

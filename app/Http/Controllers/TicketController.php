@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\AddTicketMessageAction;
 use App\Actions\CreateTicketAction;
+use App\Enums\TicketPriority;
 use App\Http\Requests\StoreTicketMessageRequest;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Resources\TicketResource;
@@ -11,6 +12,7 @@ use App\Models\Ticket;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +47,13 @@ class TicketController extends Controller
      */
     public function store(StoreTicketRequest $request, CreateTicketAction $createTicket): RedirectResponse
     {
-        $ticket = $createTicket->handle($request->user(), $request->validated());
+        $ticket = $createTicket->handle(
+            $request->user(),
+            $request->string('title')->toString(),
+            $request->string('description')->toString(),
+            $request->enum('priority', TicketPriority::class) ?? throw ValidationException::withMessages(['priority' => 'De prioriteit is verplicht.']),
+            $request->integer('organization_id'),
+        );
 
         $request->session()->flash('success', 'Ticket aangemaakt.');
 

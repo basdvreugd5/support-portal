@@ -14,29 +14,26 @@ class CreateTicketAction
     /**
      * Create a ticket on behalf of the given user.
      *
-     * Clients always create inside their own organization; agents must
-     * specify an organization to create on behalf of.
+     * Clients always create inside their own organization and ignore
+     * $organizationId. Agents must provide the organization to create
+     * on behalf of; the store request validation guarantees it is present.
      *
-     * @param  array{title: string, description: string, priority: TicketPriority|string, organization_id?: int}  $data
+     * @param  ?int  $organizationId  The organization id for agents; ignored for clients.
      */
-    public function handle(User $user, array $data): Ticket
+    public function handle(User $user, string $title, string $description, TicketPriority $priority, ?int $organizationId = null): Ticket
     {
         if ($user->role === UserRole::Agent) {
-            $organization = Organization::findOrFail($data['organization_id']);
+            $organization = Organization::findOrFail((int) $organizationId);
         } else {
             $organization = Organization::findOrFail($user->organization_id);
         }
-
-        $priority = $data['priority'] instanceof TicketPriority
-            ? $data['priority']
-            : TicketPriority::from($data['priority']);
 
         return Ticket::create([
             'organization_id' => $organization->id,
             'created_by_id' => $user->id,
             'assigned_to_id' => null,
-            'title' => $data['title'],
-            'description' => $data['description'],
+            'title' => $title,
+            'description' => $description,
             'status' => TicketStatus::Open,
             'priority' => $priority,
             'sla_due_at' => now()->addHours($priority->slaHours()),

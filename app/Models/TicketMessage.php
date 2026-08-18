@@ -42,11 +42,17 @@ class TicketMessage extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Ticket, $this>
+     */
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -54,6 +60,8 @@ class TicketMessage extends Model
 
     /**
      * Restrict a query to the messages a user is allowed to see.
+     *
+     * @param  Builder<TicketMessage>  $query
      */
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void
