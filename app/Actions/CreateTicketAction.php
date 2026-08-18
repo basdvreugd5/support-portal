@@ -11,6 +11,10 @@ use App\Models\User;
 
 class CreateTicketAction
 {
+    public function __construct(
+        private readonly CalculateSlaDeadlineAction $calculateSlaDeadline,
+    ) {}
+
     /**
      * Create a ticket on behalf of the given user.
      *
@@ -36,7 +40,7 @@ class CreateTicketAction
             'description' => $description,
             'status' => TicketStatus::Open,
             'priority' => $priority,
-            'sla_due_at' => now()->addHours($priority->slaHours()),
+            'sla_due_at' => $this->calculateSlaDeadline->handle($priority),
         ]);
     }
 }

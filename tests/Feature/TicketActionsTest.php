@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\AddTicketMessageAction;
+use App\Actions\CalculateSlaDeadlineAction;
 use App\Actions\CreateTicketAction;
 use App\Enums\TicketMessageType;
 use App\Enums\TicketPriority;
@@ -16,7 +17,7 @@ it('creates a ticket for a client inside their own organization', function () {
     $organization = Organization::factory()->create();
     $client = User::factory()->forOrganization($organization)->create();
 
-    $ticket = (new CreateTicketAction)->handle(
+    $ticket = (new CreateTicketAction(new CalculateSlaDeadlineAction))->handle(
         $client,
         'Nieuwe VM aanvragen',
         'Wij hebben een extra VM nodig.',
@@ -35,7 +36,7 @@ it('creates a ticket for an agent on behalf of a chosen organization', function 
     $organization = Organization::factory()->create();
     $agent = User::factory()->agent()->create();
 
-    $ticket = (new CreateTicketAction)->handle(
+    $ticket = (new CreateTicketAction(new CalculateSlaDeadlineAction))->handle(
         $agent,
         'Ticket namens klant',
         'Ingediend door de supportagent.',

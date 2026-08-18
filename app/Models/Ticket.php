@@ -50,6 +50,11 @@ class Ticket extends Model
     use HasFactory;
 
     /**
+     * Minutes before the deadline a ticket is considered "due soon".
+     */
+    public const DUE_SOON_WINDOW_MINUTES = 120;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -109,22 +114,65 @@ class Ticket extends Model
     }
 
     /**
+     * Restrict a query to active tickets past their SLA deadline.
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function overdue(Builder $query): void
+    {
+        $query
+            ->whereNotIn('status', $this->inactiveStatuses())
+            ->where('sla_due_at', '<=', now());
+    }
+
+    /**
+     * Restrict a query to active tickets within the due-soon window before
+     * their SLA deadline.
+     *
+     * @param  Builder<Ticket>  $query
+     */
+    #[Scope]
+    protected function dueSoon(Builder $query): void
+    {
+        $query
+            ->whereNotIn('status', $this->inactiveStatuses())
+            ->where('sla_due_at', '>', now())
+            ->where('sla_due_at', '<=', now()->addMinutes(self::DUE_SOON_WINDOW_MINUTES));
+    }
+
+    /**
      * Determine the SLA status derived from the deadline and lifecycle.
      */
     public function slaStatus(): ?SlaStatus
     {
-        if ($this->status === TicketStatus::Resolved || $this->status === TicketStatus::Closed) {
+        if (in_array($this->status->value, $this->inactiveStatuses(), true)) {
             return null;
         }
 
-        if (now()->greaterThanOrEqualTo($this->sla_due_at)) {
+        $now = now();
+
+        if ($now->greaterThanOrEqualTo($this->sla_due_at)) {
             return SlaStatus::Overdue;
         }
 
-        if (abs($this->sla_due_at->diffInMinutes(now())) <= 120) {
+        if ($now->addMinutes(self::DUE_SOON_WINDOW_MINUTES)->greaterThanOrEqualTo($this->sla_due_at)) {
             return SlaStatus::DueSoon;
         }
 
         return SlaStatus::OnTrack;
+    }
+
+    /**
+     * Statuses that end the SLA lifecycle.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function inactiveStatuses(): array
+    {
+        return [
+            TicketStatus::Resolved->value,
+            TicketStatus::Closed->value,
+        ];
     }
 }
