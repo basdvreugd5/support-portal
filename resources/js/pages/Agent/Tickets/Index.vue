@@ -1,31 +1,49 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { Search } from '@lucide/vue';
+import { computed, reactive } from 'vue';
 import PaginationBar from '@/components/PaginationBar.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { create, index, show } from '@/routes/tickets';
-import type { Pagination, Ticket } from '@/types';
+import type { Organization, Pagination, Ticket } from '@/types';
 
 type Props = {
     tickets: Ticket[];
     pagination: Pagination;
+    organizations?: Organization[];
     filters?: {
         status?: string;
         priority?: string;
         sla?: string;
+        search?: string;
+        organization?: string;
     };
 };
 
 const props = withDefaults(defineProps<Props>(), {
     filters: () => ({}),
+    organizations: () => [],
 });
 
 const filters = reactive({
     status: props.filters.status ?? '',
     priority: props.filters.priority ?? '',
     sla: props.filters.sla ?? '',
+    search: props.filters.search ?? '',
+    organization: props.filters.organization ?? '',
 });
+
+const hasActiveFilters = computed(() =>
+    Boolean(
+        filters.status ||
+        filters.priority ||
+        filters.sla ||
+        filters.search ||
+        filters.organization,
+    ),
+);
 
 function pageUrl(page: number): string {
     const query: Record<string, string> = { page: String(page) };
@@ -42,6 +60,14 @@ function pageUrl(page: number): string {
         query.sla = filters.sla;
     }
 
+    if (filters.search) {
+        query.search = filters.search;
+    }
+
+    if (filters.organization) {
+        query.organization = filters.organization;
+    }
+
     return index({ query }).url;
 }
 function applyFilters(): void {
@@ -55,6 +81,8 @@ function resetFilters(): void {
     filters.status = '';
     filters.priority = '';
     filters.sla = '';
+    filters.search = '';
+    filters.organization = '';
 
     router.get(
         index().url,
@@ -163,6 +191,23 @@ const selectClass =
 
         <div class="flex flex-wrap items-end gap-3">
             <div class="grid gap-1">
+                <label class="text-sm font-medium" for="search">Zoeken</label>
+                <div class="relative">
+                    <Search
+                        class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                        id="search"
+                        v-model="filters.search"
+                        type="search"
+                        placeholder="Titel of omschrijving…"
+                        class="w-72 pl-9"
+                        @keyup.enter="applyFilters"
+                    />
+                </div>
+            </div>
+
+            <div class="grid gap-1">
                 <label class="text-sm font-medium" for="status">Status</label>
                 <select
                     id="status"
@@ -213,15 +258,48 @@ const selectClass =
                 </select>
             </div>
 
+            <div class="grid gap-1">
+                <label class="text-sm font-medium" for="organization"
+                    >Organisatie</label
+                >
+                <select
+                    id="organization"
+                    v-model="filters.organization"
+                    class="w-48"
+                    :class="selectClass"
+                    @change="applyFilters"
+                >
+                    <option value="">Alle</option>
+                    <option
+                        v-for="organization in organizations"
+                        :key="organization.id"
+                        :value="String(organization.id)"
+                    >
+                        {{ organization.name }}
+                    </option>
+                </select>
+            </div>
+
             <Button
                 variant="ghost"
                 class="h-9"
-                :disabled="!filters.status && !filters.priority && !filters.sla"
+                :disabled="
+                    !filters.status &&
+                    !filters.priority &&
+                    !filters.sla &&
+                    !filters.search &&
+                    !filters.organization
+                "
                 @click="resetFilters"
             >
                 Filters wissen
             </Button>
         </div>
+
+        <p v-if="hasActiveFilters" class="text-sm text-muted-foreground">
+            {{ pagination.total }}
+            {{ pagination.total === 1 ? 'resultaat' : 'resultaten' }}
+        </p>
 
         <div class="overflow-hidden rounded-xl border border-sidebar-border/70">
             <table class="w-full text-sm">

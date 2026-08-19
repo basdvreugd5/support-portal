@@ -224,6 +224,147 @@ it('keeps filters active across pages', function () {
             ->where('pagination.page', 2));
 });
 
+it('filters tickets by organization', function () {
+    $orgB = $this->orgB;
+    $bTicket = Ticket::factory()->forOrganization($orgB)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+    ]);
+    Ticket::factory()->forOrganization($this->orgA)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+    ]);
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['organization_id' => $orgB->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets.0.id', $bTicket->id)
+            ->where('filters.organization', (string) $orgB->id));
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['organization_id' => $orgB->id, 'status' => 'open']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets.0.id', $bTicket->id));
+});
+
+it('filters tickets by free-text search across title and description', function () {
+    $titleMatch = Ticket::factory()->forOrganization($this->orgA)->create([
+        'title' => 'VPN werkt niet op de buitenlandse locaties',
+        'priority' => TicketPriority::Normal,
+    ]);
+    $descMatch = Ticket::factory()->forOrganization($this->orgB)->create([
+        'title' => 'Printerstoring vestiging Leiden',
+        'description' => 'De VPN-verbinding valt telkens weg tijdens vergaderingen.',
+        'priority' => TicketPriority::Normal,
+    ]);
+    Ticket::factory()->forOrganization($this->orgA)->create([
+        'title' => 'Ongezocht ticket',
+        'priority' => TicketPriority::Normal,
+    ]);
+
+    $onlyMatching = fn (array $expected) => function ($tickets) use ($expected) {
+        $tickets = collect($tickets);
+
+        return $tickets->pluck('id')->diff($expected)->isEmpty()
+            && $tickets->count() === count($expected);
+    };
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['search' => 'vpn']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 2)
+            ->where('filters.search', 'vpn')
+            ->where('tickets', $onlyMatching([$titleMatch->id, $descMatch->id])));
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['search' => 'vpn-verbinding']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets', $onlyMatching([$descMatch->id])));
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['search' => 'printerstoring']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets', $onlyMatching([$descMatch->id])));
+});
+
+it('does not treat % and _ as LIKE wildcards in search', function () {
+    $percent = Ticket::factory()->forOrganization($this->orgA)->create([
+        'title' => 'Factuurdownload 100% gestopt',
+        'priority' => TicketPriority::Normal,
+    ]);
+    Ticket::factory()->forOrganization($this->orgA)->create([
+        'title' => 'Factuurdownload 100X gestopt',
+        'priority' => TicketPriority::Normal,
+    ]);
+    $underscore = Ticket::factory()->forOrganization($this->orgB)->create([
+        'title' => 'VPN_profile config werkt',
+        'priority' => TicketPriority::Normal,
+    ]);
+    Ticket::factory()->forOrganization($this->orgB)->create([
+        'title' => 'VPNxprofile config werkt',
+        'priority' => TicketPriority::Normal,
+    ]);
+
+    $onlyId = fn (int $id) => fn ($tickets) => collect($tickets)->count() === 1
+        && collect($tickets)->first()['id'] === $id;
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['search' => '% gestopt']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets', $onlyId($percent->id)));
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['search' => 'VPN_profile']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('tickets', $onlyId($underscore->id)));
+});
+
+it('keeps search and organization filters active across pages', function () {
+    Ticket::factory()->count(16)->forOrganization($this->orgA)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+        'title' => 'S3 sync storing Acme',
+    ]);
+    Ticket::factory()->count(2)->forOrganization($this->orgB)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+        'title' => 'S3 sync storing Globex',
+    ]);
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', [
+            'search' => 'S3 sync',
+            'organization_id' => $this->orgA->id,
+            'page' => 2,
+        ]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('filters.search', 'S3 sync')
+            ->where('filters.organization', (string) $this->orgA->id)
+            ->where('pagination.total', 16)
+            ->where('pagination.page', 2));
+});
+
+it('lets clients ignore the agent-only search and organization filters', function () {
+    Ticket::factory()->forOrganization($this->orgA)->create([
+        'title' => 'VPN storing',
+        'priority' => TicketPriority::Normal,
+    ]);
+
+    $this->actingAs($this->clientA)
+        ->get(route('tickets.index', ['search' => 'VPN', 'organization_id' => $this->orgB->id]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 2)
+            ->where('filters.search', '')
+            ->where('filters.organization', ''));
+});
+
 it('shows internal notes to agents but not to clients', function () {
     TicketMessage::factory()->create([
         'ticket_id' => $this->ticket->id,

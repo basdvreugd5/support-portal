@@ -38,18 +38,29 @@ class TicketController extends Controller
         $status = null;
         $priority = null;
         $sla = '';
+        $search = '';
+        $organizationId = 0;
 
         if ($user->role === UserRole::Agent) {
             $status = $request->enum('status', TicketStatus::class);
             $priority = $request->enum('priority', TicketPriority::class);
             $sla = $request->string('sla')->toString();
+            $search = $request->string('search')->trim()->toString();
+            $organizationId = $request->integer('organization_id');
 
             $query
                 ->when($status?->value, fn ($q, $value) => $q->where('status', $value))
                 ->when($priority?->value, fn ($q, $value) => $q->where('priority', $value))
                 ->when($sla === 'on_track', fn ($q) => $q->onTrack())
                 ->when($sla === 'due_soon', fn ($q) => $q->dueSoon())
-                ->when($sla === 'overdue', fn ($q) => $q->overdue());
+                ->when($sla === 'overdue', fn ($q) => $q->overdue())
+                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
+                    $pattern = '%'.addcslashes($search, '%_\\').'%';
+
+                    $q->whereLike('title', $pattern)
+                        ->orWhereLike('description', $pattern);
+                }))
+                ->when($organizationId > 0, fn ($q) => $q->where('organization_id', $organizationId));
         }
 
         $tickets = $query
@@ -58,22 +69,32 @@ class TicketController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $filters = [
+            'status' => $status->value ?? '',
+            'priority' => $priority->value ?? '',
+            'sla' => $sla,
+            'search' => $search,
+            'organization' => $organizationId > 0 ? (string) $organizationId : '',
+        ];
+
+        $data = [
+            'tickets' => TicketResource::collection($tickets->getCollection())->resolve($request),
+            'filters' => $filters,
+            'pagination' => [
+                'page' => $tickets->currentPage(),
+                'last_page' => $tickets->lastPage(),
+                'per_page' => $tickets->perPage(),
+                'total' => $tickets->total(),
+            ],
+        ];
+
+        if ($user->role === UserRole::Agent) {
+            $data['organizations'] = OrganizationResource::collection(Organization::orderBy('name')->get())->resolve($request);
+        }
+
         return Inertia::render(
             $user->role === UserRole::Agent ? 'Agent/Tickets/Index' : 'Client/Tickets/Index',
-            [
-                'tickets' => TicketResource::collection($tickets->getCollection())->resolve($request),
-                'filters' => [
-                    'status' => $status->value ?? '',
-                    'priority' => $priority->value ?? '',
-                    'sla' => $sla,
-                ],
-                'pagination' => [
-                    'page' => $tickets->currentPage(),
-                    'last_page' => $tickets->lastPage(),
-                    'per_page' => $tickets->perPage(),
-                    'total' => $tickets->total(),
-                ],
-            ],
+            $data,
         );
     }
 

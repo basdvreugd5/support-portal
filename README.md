@@ -39,6 +39,10 @@ Eloquent
 MySQL/MariaDB
 ```
 
+### Why Inertia.js?
+
+The brief calls for a distinct Vue 3 frontend consuming Laravel data, while excluding server-driven UI (Livewire/Volt/Filament) and the extra SPA infrastructure it implies (Vue Router, Pinia, a standalone API, token auth). Inertia.js delivers that: pages navigate client-side with SPA-style transitions, yet every request still hits the normal Laravel route/controller stack. Controllers render Inertia pages whose props are shaped by the `JsonResource` boundary, so the backend stays the single source of truth and Vue remains a presentation layer — never a security boundary.
+
 Key boundaries:
 
 - **Controllers** orchestrate; **Actions** own business rules; **Form Requests** validate; **Policies** authorize resources; **query scopes** restrict data at the SQL level.
@@ -135,7 +139,7 @@ Implemented:
 - Session login/logout (users created via seeders)
 - Organization-scoped ticket list, creation, and detail pages for clients
 - Public replies on tickets
-- Agent workspace: full ticket overview, filters (status/priority/SLA), status/priority changes, assignment (including explicit unassignment), public replies, and internal notes
+- Agent workspace: full ticket overview, filters (status, priority, SLA, organization, free-text search), status/priority changes, assignment (including explicit unassignment), public replies, and internal notes
 - Pagination (15 tickets per page) for both client and agent lists, with filters preserved across pages
 - Flash feedback (success/error toasts)
 - Deterministic, demo-ready seeder dataset
@@ -148,7 +152,6 @@ Scoped out of this prototype:
 - Attachments / file uploads
 - Audit trail
 - Configurable / organization-specific SLA
-- Advanced search & extra filters (organization, free-text)
 - Granular/custom permissions
 - Public registration, password reset, email verification, 2FA
 - WebSockets / real-time updates
@@ -156,6 +159,12 @@ Scoped out of this prototype:
 See *Next Steps* for how these could evolve without rearchitecting.
 
 ## Next steps / production evolution
+
+### Shortcuts & Trade-offs
+
+- **Static SLA deadlines** — `sla_due_at` is set at creation and is not recalculated when an agent changes priority; a production build would define business rules for SLA extension/recalculation.
+- **Clock & timezone handling** — SLA comparisons use the application timezone (UTC), with no business-hours, weekend, or holiday pausing.
+- **Simple role property** — roles are a `UserRole` enum stored on `users` (`client` / `agent`) rather than dynamic RBAC tables; if roles become dynamic, Spatie Permission can be layered on top of the existing policies (see bullets below).
 
 - **Permissions** — if roles become dynamic, layer Spatie Laravel Permission on top of the existing policies.
 - **SLA** — business-hours aware policies, pausing, escalation, response vs resolution SLA, organization-specific SLA.
@@ -172,6 +181,7 @@ The suite focuses on business risks and security boundaries:
 - Internal-note boundary (client responses never contain internal notes; only agents can create them)
 - SLA deadline calculation for every priority, plus time-travel tests for `on_track` / `due_soon` / `overdue` and resolved/closed lifecycle
 - Agent lifecycle: status, priority, assignment, replies, internal notes
+- Agent filtering: status, priority, SLA, organization, and free-text search (title/description, literal `%`/`_` escaped), preserved across pages
 - Validation rules and flash feedback
 - Seeder: demo scenarios, internal-note authorship, and pagination-friendly dataset
 
@@ -181,6 +191,14 @@ Run everything:
 php artisan test            # Pest test suite
 composer ci:check           # Pint + PHPStan + frontend + tests
 ```
+
+The test suite runs against MySQL (the same driver used in CI and production). Locally it uses a dedicated `support_portal_test` database which `RefreshDatabase` resets on every run — create it once:
+
+```bash
+mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS support_portal_test"
+```
+
+If you prefer, create it via tinker: `php artisan tinker --execute 'DB::statement("CREATE DATABASE IF NOT EXISTS support_portal_test");'`.
 
 Frontend checks:
 
