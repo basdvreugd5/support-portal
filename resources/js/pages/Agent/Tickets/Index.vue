@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { reactive } from 'vue';
+import PaginationBar from '@/components/PaginationBar.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { create, index, show } from '@/routes/tickets';
-import type { Ticket } from '@/types';
+import type { Pagination, Ticket } from '@/types';
+
 type Props = {
     tickets: Ticket[];
+    pagination: Pagination;
     filters?: {
         status?: string;
         priority?: string;
@@ -24,6 +27,23 @@ const filters = reactive({
     sla: props.filters.sla ?? '',
 });
 
+function pageUrl(page: number): string {
+    const query: Record<string, string> = { page: String(page) };
+
+    if (filters.status) {
+        query.status = filters.status;
+    }
+
+    if (filters.priority) {
+        query.priority = filters.priority;
+    }
+
+    if (filters.sla) {
+        query.sla = filters.sla;
+    }
+
+    return index({ query }).url;
+}
 function applyFilters(): void {
     router.get(index().url, filters, {
         preserveState: true,
@@ -280,5 +300,7 @@ const selectClass =
                 </tbody>
             </table>
         </div>
+
+        <PaginationBar :pagination="pagination" :page-url="pageUrl" />
     </div>
 </template>

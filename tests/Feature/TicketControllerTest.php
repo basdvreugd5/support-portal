@@ -130,6 +130,19 @@ it('validates the reply input', function () {
         ->assertSessionHasErrors(['body']);
 });
 
+it('paginates the client ticket list within their own organization', function () {
+    Ticket::factory()->count(16)->forOrganization($this->orgA)->create();
+
+    $this->actingAs($this->clientA)
+        ->get(route('tickets.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 15)
+            ->where('pagination.page', 1)
+            ->where('pagination.last_page', 2)
+            ->where('pagination.total', 17));
+});
+
 it('redirects guests to the login page when storing a ticket', function () {
     $this->post(route('tickets.store'), [
         'title' => 'Zonder inlog',

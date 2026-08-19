@@ -8,6 +8,13 @@ export type Organization = {
     name: string;
 };
 
+export type Pagination = {
+    page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+};
+
 export type UserSummary = {
     id: number;
     name: string;

@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import PaginationBar from '@/components/PaginationBar.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { create, show } from '@/routes/tickets';
-import type { Ticket } from '@/types';
+import { create, index, show } from '@/routes/tickets';
+import type { Pagination, Ticket } from '@/types';
 
 defineProps<{
     tickets: Ticket[];
+    pagination: Pagination;
 }>();
+
+function pageUrl(page: number): string {
+    return index({ query: { page } }).url;
+}
 
 function formatDate(value: string | null): string {
     if (!value) {
@@ -170,5 +176,7 @@ function slaVariant(
                 </tbody>
             </table>
         </div>
+
+        <PaginationBar :pagination="pagination" :page-url="pageUrl" />
     </div>
 </template>

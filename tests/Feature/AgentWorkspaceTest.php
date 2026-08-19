@@ -153,6 +153,47 @@ it('blocks a client from posting an internal note', function () {
         ->assertForbidden();
 });
 
+it('paginates the agent ticket list', function () {
+    Ticket::factory()->count(16)->forOrganization($this->orgA)->create();
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 15)
+            ->where('pagination.page', 1)
+            ->where('pagination.last_page', 2)
+            ->where('pagination.total', 17));
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 2)
+            ->where('pagination.page', 2)
+            ->where('pagination.last_page', 2));
+});
+
+it('keeps filters active across pages', function () {
+    $this->travelTo('2026-01-01 09:00:00');
+
+    Ticket::factory()->count(16)->forOrganization($this->orgA)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::High,
+        'sla_due_at' => now()->addHours(3),
+    ]);
+    Ticket::factory()->count(2)->forOrganization($this->orgB)->create([
+        'status' => TicketStatus::Closed,
+        'priority' => TicketPriority::Low,
+        'sla_due_at' => now()->addHours(3),
+    ]);
+
+    $this->actingAs($this->agent)
+        ->get(route('tickets.index', ['status' => 'open', 'page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('tickets', 1)
+            ->where('pagination.total', 16)
+            ->where('pagination.page', 2));
+});
+
 it('shows internal notes to agents but not to clients', function () {
     TicketMessage::factory()->create([
         'ticket_id' => $this->ticket->id,

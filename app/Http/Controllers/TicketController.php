@@ -55,16 +55,23 @@ class TicketController extends Controller
         $tickets = $query
             ->with(['organization', 'assignedTo'])
             ->latest()
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render(
             $user->role === UserRole::Agent ? 'Agent/Tickets/Index' : 'Client/Tickets/Index',
             [
-                'tickets' => TicketResource::collection($tickets)->resolve($request),
+                'tickets' => TicketResource::collection($tickets->getCollection())->resolve($request),
                 'filters' => [
                     'status' => $status->value ?? '',
                     'priority' => $priority->value ?? '',
                     'sla' => $sla,
+                ],
+                'pagination' => [
+                    'page' => $tickets->currentPage(),
+                    'last_page' => $tickets->lastPage(),
+                    'per_page' => $tickets->perPage(),
+                    'total' => $tickets->total(),
                 ],
             ],
         );
