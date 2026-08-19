@@ -25,7 +25,8 @@ class TicketPolicy
             return true;
         }
 
-        return $user->organization_id === $ticket->organization_id;
+        return $user->organization_id !== null
+            && $user->organization_id === $ticket->organization_id;
     }
 
     /**

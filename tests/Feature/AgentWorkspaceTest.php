@@ -121,6 +121,36 @@ it('rejects assigning a ticket to a client user', function () {
         ->assertSessionHasErrors('assigned_to_id');
 });
 
+it('lets an agent clear the assignment', function () {
+    $ticket = Ticket::factory()->forOrganization($this->orgA)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+        'assigned_to_id' => $this->otherAgent->id,
+    ]);
+
+    $this->actingAs($this->agent)
+        ->patch(route('tickets.update', $ticket), ['assigned_to_id' => ''])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Ticket bijgewerkt.');
+
+    expect($ticket->fresh()->assigned_to_id)->toBeNull();
+});
+
+it('keeps the assignment when it is omitted from the update', function () {
+    $ticket = Ticket::factory()->forOrganization($this->orgA)->create([
+        'status' => TicketStatus::Open,
+        'priority' => TicketPriority::Normal,
+        'assigned_to_id' => $this->otherAgent->id,
+    ]);
+
+    $this->actingAs($this->agent)
+        ->patch(route('tickets.update', $ticket), ['status' => 'in_progress'])
+        ->assertRedirect();
+
+    expect($ticket->fresh()->status)->toBe(TicketStatus::InProgress);
+    expect($ticket->fresh()->assigned_to_id)->toBe($this->otherAgent->id);
+});
+
 it('validates the update input', function () {
     $this->actingAs($this->agent)
         ->patch(route('tickets.update', $this->ticket), ['status' => 'onbekend'])

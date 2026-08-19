@@ -29,7 +29,25 @@ it('assigns a ticket to an agent', function () {
     $agent = User::factory()->agent()->create();
     $ticket = Ticket::factory()->create();
 
-    (new UpdateTicketAction)->handle($ticket, null, null, $agent->id);
+    (new UpdateTicketAction)->handle($ticket, null, null, $agent->id, true);
+
+    expect($ticket->fresh()->assigned_to_id)->toBe($agent->id);
+});
+
+it('clears the assignment when explicitly requested', function () {
+    $agent = User::factory()->agent()->create();
+    $ticket = Ticket::factory()->create(['assigned_to_id' => $agent->id]);
+
+    (new UpdateTicketAction)->handle($ticket, null, null, null, true);
+
+    expect($ticket->fresh()->assigned_to_id)->toBeNull();
+});
+
+it('leaves the assignment untouched when not provided', function () {
+    $agent = User::factory()->agent()->create();
+    $ticket = Ticket::factory()->create(['assigned_to_id' => $agent->id]);
+
+    (new UpdateTicketAction)->handle($ticket);
 
     expect($ticket->fresh()->assigned_to_id)->toBe($agent->id);
 });

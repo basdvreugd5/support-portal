@@ -24,6 +24,22 @@ it('blocks a client from viewing a ticket from another organization', function (
     expect($client->can('view', $ticket))->toBeFalse();
 });
 
+it('blocks a client without an organization from viewing any ticket', function () {
+    $organization = Organization::factory()->create();
+    $client = User::factory()->create(['organization_id' => null]);
+    $ticket = Ticket::factory()->forOrganization($organization)->create();
+
+    expect($client->can('view', $ticket))->toBeFalse();
+});
+
+it('blocks a client without an organization from replying to any ticket', function () {
+    $organization = Organization::factory()->create();
+    $client = User::factory()->create(['organization_id' => null]);
+    $ticket = Ticket::factory()->forOrganization($organization)->create();
+
+    expect($client->can('reply', $ticket))->toBeFalse();
+});
+
 it('allows an agent to view any ticket', function () {
     $organization = Organization::factory()->create();
     $agent = User::factory()->agent()->create();

@@ -149,11 +149,14 @@ class TicketController extends Controller
      */
     public function update(UpdateTicketRequest $request, Ticket $ticket, UpdateTicketAction $updateTicket): RedirectResponse
     {
+        $assignedTo = $request->input('assigned_to_id');
+
         $updateTicket->handle(
             $ticket,
             $request->enum('status', TicketStatus::class),
             $request->enum('priority', TicketPriority::class),
-            $request->has('assigned_to_id') ? $request->integer('assigned_to_id') : null,
+            $assignedTo !== null ? (int) $assignedTo : null,
+            $request->exists('assigned_to_id'),
         );
 
         $request->session()->flash('success', 'Ticket bijgewerkt.');
