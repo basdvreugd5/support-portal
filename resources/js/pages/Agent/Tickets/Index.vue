@@ -45,8 +45,8 @@ const hasActiveFilters = computed(() =>
     ),
 );
 
-function pageUrl(page: number): string {
-    const query: Record<string, string> = { page: String(page) };
+function filterQuery(): Record<string, string> {
+    const query: Record<string, string> = {};
 
     if (filters.status) {
         query.status = filters.status;
@@ -65,13 +65,18 @@ function pageUrl(page: number): string {
     }
 
     if (filters.organization) {
-        query.organization = filters.organization;
+        query.organization_id = filters.organization;
     }
 
-    return index({ query }).url;
+    return query;
 }
+
+function pageUrl(page: number): string {
+    return index({ query: { page: String(page), ...filterQuery() } }).url;
+}
+
 function applyFilters(): void {
-    router.get(index().url, filters, {
+    router.get(index().url, filterQuery(), {
         preserveState: true,
         preserveScroll: true,
     });
