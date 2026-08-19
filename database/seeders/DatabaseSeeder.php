@@ -52,6 +52,20 @@ class DatabaseSeeder extends Seeder
         $licenseQuestion = $this->ticket($acme, $alice, 'Vraag over licenties', TicketStatus::Resolved, TicketPriority::Low, now()->subDay(), $agentDan);
         $migration = $this->ticket($globex, $carl, 'Migratie naar de nieuwe omgeving', TicketStatus::Closed, TicketPriority::Normal, now()->subDays(2), $agentEve);
 
+        // Pagination fillers (Acme) -----------------------------------------------------
+        $this->ticket($acme, $alice, 'Foutmelding bij wizard-import', TicketStatus::Open, TicketPriority::Low, now()->addHours(30));
+        $this->ticket($acme, $bob, 'Toegang tot rapportagedashboard', TicketStatus::Open, TicketPriority::Normal, now()->addHours(32), $agentDan);
+        $this->ticket($acme, $alice, 'SSL-certificaat staging verloopt', TicketStatus::Open, TicketPriority::High, now()->addHours(20), $agentEve);
+        $this->ticket($acme, $bob, 'Bulkexport reageert traag', TicketStatus::InProgress, TicketPriority::Normal, now()->addHours(30));
+        $this->ticket($acme, $alice, 'Inlogprobleem op kantoor', TicketStatus::InProgress, TicketPriority::High, now()->addMinutes(90), $agentDan);
+        $this->ticket($acme, $bob, 'Mislukte back-upcontrole', TicketStatus::Open, TicketPriority::Normal, now()->addMinutes(110), $agentEve);
+        $this->ticket($acme, $alice, 'Ontbrekende factuurregels bij export', TicketStatus::InProgress, TicketPriority::Normal, now()->subHours(4));
+        $this->ticket($acme, $bob, 'API-endpoint geeft 502', TicketStatus::Open, TicketPriority::High, now()->subHours(6), $agentEve);
+        $this->ticket($acme, $alice, 'Wachtwoordresettool doet niets', TicketStatus::Resolved, TicketPriority::Low, now()->subDay(), $agentDan);
+        $this->ticket($acme, $bob, 'Migratie testomgeving afgerond', TicketStatus::Closed, TicketPriority::Normal, now()->subDays(2), $agentEve);
+        $this->ticket($acme, $alice, 'Printprobleem op afdeling', TicketStatus::Open, TicketPriority::Low, now()->addHours(50));
+        $this->ticket($acme, $bob, 'Gedeelde mailbox zit vol', TicketStatus::InProgress, TicketPriority::High, now()->addHours(11), $agentDan);
+
         // Messages -----------------------------------------------------------------------
         $this->publicMessage($slowVms, $alice, 'De VM-omgeving reageert sinds vanmorgen erg traag.');
         $this->publicMessage($slowVms, $agentDan, 'Bedankt voor de melding, we onderzoeken de load op de hypervisor.');
@@ -60,6 +74,10 @@ class DatabaseSeeder extends Seeder
         $this->publicMessage($invoiceError, $bob, 'Bij het downloaden van de factuur krijg ik een 500-fout.');
         $this->publicMessage($exportRequest, $carl, 'Is het mogelijk om tickets naar CSV te exporteren?');
         $this->publicMessage($licenseQuestion, $agentDan, 'De licenties zijn verlengd tot eind van het jaar.');
+
+        // Internal notes (agent-only) ----------------------------------------------------
+        $this->internalNote($prodDown, $agentDan, 'Storage-storing bevestigd: volume op share-01 is defect. Vendor case #4821 aangemaakt, verwachte hersteltijd 14:00. Klant is geïnformeerd.');
+        $this->internalNote($invoiceError, $agentEve, 'Herleid naar de factuurservice (v4.2-rc1); vermoedelijke race-condition bij PDF-generatie. Intern ticket aangemaakt, verificatie staat morgenochtend gepland.');
     }
 
     private function clientUser(Organization $organization, string $name, string $email): User
@@ -107,6 +125,16 @@ class DatabaseSeeder extends Seeder
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'type' => TicketMessageType::Public,
+            'body' => $body,
+        ]);
+    }
+
+    private function internalNote(Ticket $ticket, User $user, string $body): TicketMessage
+    {
+        return TicketMessage::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'type' => TicketMessageType::Internal,
             'body' => $body,
         ]);
     }

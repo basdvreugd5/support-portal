@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TicketMessageType;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use App\Enums\UserRole;
@@ -74,4 +75,28 @@ it('seeds messages for the ticket conversation', function () {
     $this->seed();
 
     expect(DB::table('ticket_messages')->count())->toBeGreaterThan(0);
+});
+
+it('seeds internal notes created only by agents', function () {
+    $this->seed();
+
+    $internalNotes = DB::table('ticket_messages')
+        ->where('type', TicketMessageType::Internal->value)
+        ->get();
+
+    expect($internalNotes)->toHaveCount(2);
+
+    foreach ($internalNotes->pluck('user_id') as $userId) {
+        expect(User::find($userId)->role)->toBe(UserRole::Agent);
+    }
+});
+
+it('seeds enough tickets to demo pagination for agents and clients', function () {
+    $this->seed();
+
+    $tickets = Ticket::query()->get();
+    $acme = Organization::query()->where('name', 'Acme BV')->value('id');
+
+    expect($tickets)->toHaveCount(21);
+    expect($tickets->where('organization_id', $acme))->toHaveCount(17);
 });
