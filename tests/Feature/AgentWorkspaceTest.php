@@ -28,12 +28,19 @@ it('renders the agent index page for agents and the client page for clients', fu
     $this->actingAs($this->clientA)
         ->get(route('tickets.index'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('Client/Tickets/Index'));
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Client/Tickets/Index')
+            ->missing('organizations'));
 
     $this->actingAs($this->agent)
         ->get(route('tickets.index'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('Agent/Tickets/Index'));
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Agent/Tickets/Index')
+            ->has('organizations', 2)
+            ->has('organizations.0', fn (Assert $org) => $org
+                ->whereType('id', 'integer')
+                ->whereType('name', 'string')));
 });
 
 it('filters tickets by status and priority', function () {

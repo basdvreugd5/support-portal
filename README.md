@@ -192,13 +192,15 @@ php artisan test            # Pest test suite
 composer ci:check           # Pint + PHPStan + frontend + tests
 ```
 
+On Windows, the `composer` scripts may not put `phpstan` on `PATH`; run it directly as `vendor/bin/phpstan analyse` (CI resolves it via composer automatically).
+
 The test suite runs against MySQL (the same driver used in CI and production). Locally it uses a dedicated `support_portal_test` database which `RefreshDatabase` resets on every run — create it once:
 
 ```bash
-mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS support_portal_test"
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS support_portal_test"
 ```
 
-If you prefer, create it via tinker: `php artisan tinker --execute 'DB::statement("CREATE DATABASE IF NOT EXISTS support_portal_test");'`.
+`-p` prompts for your MySQL password (matches whatever `DB_PASSWORD` is in `.env`). If you prefer, create it via tinker: `php artisan tinker --execute 'DB::statement("CREATE DATABASE IF NOT EXISTS support_portal_test");'`.
 
 Frontend checks:
 
