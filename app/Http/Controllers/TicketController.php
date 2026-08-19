@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\AddTicketMessageAction;
 use App\Actions\CreateTicketAction;
 use App\Actions\UpdateTicketAction;
+use App\Enums\SlaStatus;
 use App\Enums\TicketMessageType;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
@@ -37,23 +38,23 @@ class TicketController extends Controller
 
         $status = null;
         $priority = null;
-        $sla = '';
+        $sla = null;
         $search = '';
         $organizationId = 0;
 
         if ($user->role === UserRole::Agent) {
             $status = $request->enum('status', TicketStatus::class);
             $priority = $request->enum('priority', TicketPriority::class);
-            $sla = $request->string('sla')->toString();
+            $sla = $request->enum('sla', SlaStatus::class);
             $search = $request->string('search')->trim()->toString();
             $organizationId = $request->integer('organization_id');
 
             $query
                 ->when($status?->value, fn ($q, $value) => $q->where('status', $value))
                 ->when($priority?->value, fn ($q, $value) => $q->where('priority', $value))
-                ->when($sla === 'on_track', fn ($q) => $q->onTrack())
-                ->when($sla === 'due_soon', fn ($q) => $q->dueSoon())
-                ->when($sla === 'overdue', fn ($q) => $q->overdue())
+                ->when($sla === SlaStatus::OnTrack, fn ($q) => $q->onTrack())
+                ->when($sla === SlaStatus::DueSoon, fn ($q) => $q->dueSoon())
+                ->when($sla === SlaStatus::Overdue, fn ($q) => $q->overdue())
                 ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
                     $pattern = '%'.addcslashes($search, '%_\\').'%';
 
@@ -72,7 +73,7 @@ class TicketController extends Controller
         $filters = [
             'status' => $status->value ?? '',
             'priority' => $priority->value ?? '',
-            'sla' => $sla,
+            'sla' => $sla->value ?? '',
             'search' => $search,
             'organization' => $organizationId > 0 ? (string) $organizationId : '',
         ];
