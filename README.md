@@ -1,16 +1,16 @@
 # Support Ticket Portal
 
-A small, production-minded support ticket portal built as an MVP/prototype. Two roles — **client users** (employees of a customer organization) and **support agents** — work with organization-scoped tickets, public conversations, agent-only internal notes, and a priority-based SLA engine.
+A small support ticket portal prototype built with production-minded Laravel conventions. Two roles — **client users** (employees of a customer organization) and **support agents** — work with organization-scoped tickets, public conversations, agent-only internal notes, and a priority-based SLA engine.
 
 ## Stack
 
 | Area                    | Choice                     | Why                                                                                         |
 | ----------------------- | -------------------------- | ------------------------------------------------------------------------------------------- |
 | Backend                 | Laravel 13 (PHP 8.4)       | Conventional Laravel features, mature ecosystem                                             |
-| Authentication          | Laravel Breeze + Fortify   | Standard session authentication, scoped to login/logout only                                |
+| Authentication          | Laravel Breeze + Fortify   | Standard session authentication; only the login/logout flow is exposed in this prototype    |
 | Database                | MySQL / MariaDB            | Requirement                                                                                 |
-| Frontend                | Vue 3                      | Requirement, rendered as an Inertia SPA                                                     |
-| Server/client bridge    | Inertia.js v3              | Explicitly allowed; avoids Vue Router / API / token infrastructure                          |
+| Frontend                | Vue 3                      | JavaScript frontend with Inertia.js                                                          |
+| Server/client bridge    | Inertia.js v3              | Explicitly allowed; provides SPA-like navigation without a separate API/SPA architecture     |
 | Styling                 | Tailwind CSS + shadcn/vue  | Fast, consistent UI                                                                         |
 | Build tool              | Vite + `@inertiajs/vite`   | Standard Laravel tooling, auto Wayfinder type generation                                     |
 | ORM                     | Eloquent                   | Laravel convention                                                                          |
@@ -41,12 +41,12 @@ MySQL/MariaDB
 
 ### Why Inertia.js?
 
-The brief calls for a distinct Vue 3 frontend consuming Laravel data, while excluding server-driven UI (Livewire/Volt/Filament) and the extra SPA infrastructure it implies (Vue Router, Pinia, a standalone API, token auth). Inertia.js delivers that: pages navigate client-side with SPA-style transitions, yet every request still hits the normal Laravel route/controller stack. Controllers render Inertia pages whose props are shaped by the `JsonResource` boundary, so the backend stays the single source of truth and Vue remains a presentation layer — never a security boundary.
+The brief calls for a JavaScript frontend consuming data from Laravel, while excluding server-driven UI (Livewire/Volt/Filament). I chose Vue 3 with Inertia.js, which provides SPA-like navigation while retaining Laravel's routing, controllers, and session-based authentication, avoiding the additional infrastructure required by a fully independent SPA. Controllers render Inertia pages whose props are shaped by the `JsonResource` boundary, so the backend stays the single source of truth and Vue remains a presentation layer — never a security boundary.
 
 Key boundaries:
 
 - **Controllers** orchestrate; **Actions** own business rules; **Form Requests** validate; **Policies** authorize resources; **query scopes** restrict data at the SQL level.
-- **`JsonResource` classes** are the only data boundary to the frontend. Enums are shared as `{ value, label }`; no presentation/colors live in PHP enums.
+- **`JsonResource` classes** are the primary domain-data boundary to the frontend. Enums are shared as `{ value, label }`; no presentation/colors live in PHP enums.
 - **Shared Inertia props** (`HandleInertiaRequests`) provide `auth.user` (via a trimmed `UserResource`) and `flash.success` / `flash.error`; mutations show a synthesized toast.
 - Vue is **never** a security boundary — anything sensitive is filtered before it leaves the server.
 
@@ -68,14 +68,14 @@ Constraints enforced in the database and application:
 
 - A **client user** belongs to exactly one organization (`organization_id` required).
 - A **support agent** has `organization_id = NULL`.
-- `tickets.organization_id` is NOT NULL; `assigned_to_id` may only reference a user with `role = agent`.
+- `tickets.organization_id` is NOT NULL; `assigned_to_id` is nullable and validated at the application layer (`UpdateTicketRequest`) to reference an agent.
 
 ## Roles & permissions
 
 | Ability                         | Client | Agent |
 | ------------------------------- | :----: | :---: |
 | View own organization tickets   |   ✓    |   ✓   |
-| View other organizations' tickets|   ✗    |   ✓   |
+| View other organizations' tickets |   ✗    |   ✓   |
 | Create a ticket                 |   ✓    |   ✓   |
 | Add a public reply              |   ✓    |   ✓   |
 | Add an internal note            |   ✗    |   ✓   |
@@ -123,7 +123,7 @@ When a ticket is created, `sla_due_at` is derived from the initial priority (`Ca
 | Status     | Rule                                                     |
 | ---------- | -------------------------------------------------------- |
 | `overdue`  | `now >= sla_due_at`                                        |
-| `due_soon` | `sla_due_at - now <= 120 minutes` (fixed 2 h window)       |
+| `due_soon` | `now < sla_due_at <= now + 120 minutes` (fixed 2 h window) |
 | `on_track` | all remaining active tickets                                |
 
 All SLA comparisons use `Carbon::now()` with the application timezone (`config/app.php` — `UTC` by default); there is no business-hours clock.
@@ -164,9 +164,9 @@ See *Next Steps* for how these could evolve without rearchitecting.
 
 - **Static SLA deadlines** — `sla_due_at` is set at creation and is not recalculated when an agent changes priority; a production build would define business rules for SLA extension/recalculation.
 - **Clock & timezone handling** — SLA comparisons use the application timezone (UTC), with no business-hours, weekend, or holiday pausing.
-- **Simple role property** — roles are a `UserRole` enum stored on `users` (`client` / `agent`) rather than dynamic RBAC tables; if roles become dynamic, Spatie Permission can be layered on top of the existing policies (see bullets below).
+- **Authorization model** — roles are currently a `UserRole` enum stored on `users` (`client` / `agent`) because the prototype has exactly two fixed roles with a small, stable permission matrix. Spatie Laravel Permission was intentionally omitted because it would add complexity without solving a current requirement. If roles and permissions become dynamic, it could be introduced behind the existing policies.
 
-- **Permissions** — if roles become dynamic, layer Spatie Laravel Permission on top of the existing policies.
+- **API** — if mobile clients or other external consumers appear, expose a versioned JSON API (for example `/api/v1`) using API Resources and appropriate per-route auth rather than coupling external consumers to Inertia responses.
 - **SLA** — business-hours aware policies, pausing, escalation, response vs resolution SLA, organization-specific SLA.
 - **Notifications** — Laravel Notifications + events/queues for new tickets, replies, assignments, SLA approaching / breach.
 - **Audit trail** — a `TicketActivity` model (actor, action, timestamp, before/after values).
@@ -192,7 +192,7 @@ php artisan test            # Pest test suite
 composer ci:check           # Pint + PHPStan + frontend + tests
 ```
 
-On Windows, the `composer` scripts may not put `phpstan` on `PATH`; run it directly as `vendor/bin/phpstan analyse` (CI resolves it via composer automatically).
+On Windows, `Composer` scripts may not resolve globally invoked PHP tooling such as `Pint/PHPStan` through `PATH`. If composer ci:check fails with a "not recognized" error, run the tools directly from vendor/bin.
 
 The test suite runs against MySQL (the same driver used in CI and production). Locally it uses a dedicated `support_portal_test` database which `RefreshDatabase` resets on every run — create it once:
 
@@ -224,9 +224,9 @@ cp .env.example .env
 #    Adjust DB_HOST / DB_DATABASE / DB_USERNAME / DB_PASSWORD if your MySQL differs.
 
 # 2. Install PHP + JS dependencies and scaffold
-composer setup            # installs deps, key:generate, migrates against your .env DB
+composer setup            # installs dependencies, generates the app key, runs initial migrations
 
-# 3. Seed the demo dataset
+# 3. Reset the database and load the demo dataset
 php artisan migrate:fresh --seed
 
 # 4. Start the app
