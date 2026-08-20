@@ -15,7 +15,13 @@ class StoreTicketRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('create', Ticket::class);
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('create', Ticket::class);
     }
 
     /**

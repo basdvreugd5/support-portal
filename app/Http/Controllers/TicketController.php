@@ -19,6 +19,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Organization;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,11 +30,26 @@ use Inertia\Response;
 class TicketController extends Controller
 {
     /**
+     * The current user, guaranteed present because these routes sit behind
+     * the 'auth' middleware.
+     */
+    private function authenticatedUser(Request $request): User
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            throw new AuthenticationException('U bent niet ingelogd.');
+        }
+
+        return $user;
+    }
+
+    /**
      * Display the tickets visible to the current user.
      */
     public function index(Request $request): Response
     {
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
         $query = Ticket::query()->visibleTo($user);
 
         $status = null;
@@ -104,7 +120,7 @@ class TicketController extends Controller
      */
     public function create(Request $request): Response
     {
-        if ($request->user()->role === UserRole::Agent) {
+        if ($this->authenticatedUser($request)->role === UserRole::Agent) {
             $organizations = Organization::orderBy('name')->get();
 
             return Inertia::render('Client/Tickets/Create', [
@@ -121,7 +137,7 @@ class TicketController extends Controller
     public function store(StoreTicketRequest $request, CreateTicketAction $createTicket): RedirectResponse
     {
         $ticket = $createTicket->handle(
-            $request->user(),
+            $this->authenticatedUser($request),
             $request->string('title')->toString(),
             $request->string('description')->toString(),
             $request->enum('priority', TicketPriority::class) ?? throw ValidationException::withMessages(['priority' => 'De prioriteit is verplicht.']),
@@ -140,7 +156,7 @@ class TicketController extends Controller
     {
         Gate::authorize('view', $ticket);
 
-        $user = $request->user();
+        $user = $this->authenticatedUser($request);
 
         $ticket->load([
             'organization',
@@ -193,7 +209,7 @@ class TicketController extends Controller
     {
         $type = $request->enum('type', TicketMessageType::class) ?? TicketMessageType::Public;
 
-        $addMessage->handle($request->user(), $ticket, $request->validated('body'), $type);
+        $addMessage->handle($this->authenticatedUser($request), $ticket, $request->validated('body'), $type);
 
         $request->session()->flash(
             'success',

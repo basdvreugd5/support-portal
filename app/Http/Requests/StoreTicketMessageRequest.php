@@ -14,10 +14,15 @@ class StoreTicketMessageRequest extends FormRequest
     public function authorize(): bool
     {
         $type = $this->enum('type', TicketMessageType::class) ?? TicketMessageType::Public;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
 
         return $type === TicketMessageType::Internal
-            ? $this->user()->can('addInternalNote', $this->route('ticket'))
-            : $this->user()->can('reply', $this->route('ticket'));
+            ? $user->can('addInternalNote', $this->route('ticket'))
+            : $user->can('reply', $this->route('ticket'));
     }
 
     /**
