@@ -109,6 +109,12 @@ class Ticket extends Model
     protected function visibleTo(Builder $query, User $user): void
     {
         if ($user->role !== UserRole::Agent) {
+            if ($user->organization_id === null) {
+                $query->whereNull('id');
+
+                return;
+            }
+
             $query->where('organization_id', $user->organization_id);
         }
     }
@@ -160,7 +166,7 @@ class Ticket extends Model
      */
     public function slaStatus(): ?SlaStatus
     {
-        if (in_array($this->status->value, $this->inactiveStatuses(), true)) {
+        if (in_array($this->status, $this->inactiveStatuses(), true)) {
             return null;
         }
 
@@ -170,7 +176,7 @@ class Ticket extends Model
             return SlaStatus::Overdue;
         }
 
-        if ($now->addMinutes(self::DUE_SOON_WINDOW_MINUTES)->greaterThanOrEqualTo($this->sla_due_at)) {
+        if ($now->copy()->addMinutes(self::DUE_SOON_WINDOW_MINUTES)->greaterThanOrEqualTo($this->sla_due_at)) {
             return SlaStatus::DueSoon;
         }
 
@@ -180,13 +186,13 @@ class Ticket extends Model
     /**
      * Statuses that end the SLA lifecycle.
      *
-     * @return array{0: string, 1: string}
+     * @return array{0: TicketStatus, 1: TicketStatus}
      */
     private function inactiveStatuses(): array
     {
         return [
-            TicketStatus::Resolved->value,
-            TicketStatus::Closed->value,
+            TicketStatus::Resolved,
+            TicketStatus::Closed,
         ];
     }
 }

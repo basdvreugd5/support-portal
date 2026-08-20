@@ -27,7 +27,7 @@ class CreateTicketAction
     public function handle(User $user, string $title, string $description, TicketPriority $priority, ?int $organizationId = null): Ticket
     {
         if ($user->role === UserRole::Agent) {
-            $organization = Organization::findOrFail((int) $organizationId);
+            $organization = Organization::findOrFail($organizationId);
         } else {
             $organization = Organization::findOrFail($user->organization_id);
         }
